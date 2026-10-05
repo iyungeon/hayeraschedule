@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>하예라 정기공연 연수 일정</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; background: #ddd; transition: 0.3s; }
+        .tab-btn.active { background: #4F46E5; color: white; }
+        
+        /* 공통 컨테이너 */
+        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 1200px; margin: 0 auto; display: none; }
+        .container.active { display: block; }
+        
+        h3 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        input[type="text"], select, button { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        button { cursor: pointer; background: #4F46E5; color: white; border: none; font-weight: bold; }
+        button:hover { background: #4338CA; }
+        .danger-btn { background: #ff4d4f; }
+        .danger-btn:hover { background: #d9363e; }
+
+        /* 세팅 화면 */
+        .setup-form { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+        .setup-form input[type="text"] { flex: 1; min-width: 150px; }
+        .stage-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .stage-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; position: relative; }
+        .stage-card h4 { margin: 0 0 10px 0; color: #4F46E5; }
+        .stage-card p { margin: 0 0 8px 0; font-size: 14px; color: #475569; line-height: 1.5; }
+        .rep-badge { display: inline-block; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+
+        /* 주간 일정 화면 & 개인별 화면 공통 */
+        .schedule-controls { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        .time-separator { font-weight: bold; color: #666; }
+        .checkbox-label { font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        
+        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; overflow-x: auto; min-width: 800px; }
+        .day-column { background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; min-height: 400px; }
+        .day-title { text-align: center; font-weight: bold; padding-bottom: 5px; margin-bottom: 5px; }
+        
+        /* 날짜 입력칸 스타일 */
+        .day-date-input { width: 100%; box-sizing: border-box; padding: 4px; text-align: center; border: 1px dashed #94a3b8; border-radius: 4px; font-size: 12px; margin-bottom: 10px; color: #333; background: #fff; }
+        .day-date-input:focus { border-color: #4F46E5; outline: none; }
+        .day-date-display { text-align: center; font-size: 13px; font-weight: bold; color: #475569; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #e2e8f0; }
+
+        /* 토요일, 일요일 색상 */
+        .day-column:nth-child(6) .day-title { color: #2563eb; }
+        .day-column:nth-child(7) .day-title { color: #dc2626; }
+
+        /* 일정 카드 디자인 */
+        .schedule-card { background: white; border: 1px solid #cbd5e1; border-left: 4px solid #4F46E5; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .sch-time { font-weight: bold; color: #4F46E5; margin-bottom: 5px; font-size: 13px; background: #eef2ff; padding: 4px; border-radius: 4px; text-align: center; }
+        .sch-stage { font-weight: bold; font-size: 15px; margin-bottom: 5px; }
+        .sch-rep { font-size: 12px; color: #d97706; margin-bottom: 5px; font-weight: bold; }
+        .sch-members { color: #333; margin-bottom: 4px; }
+        .sch-absent { color: #dc2626; font-size: 12px; }
+        .sch-remark { color: #0f766e; font-size: 12px; margin-top: 6px; background: #ccfbf1; padding: 6px; border-radius: 4px; border: 1px solid #99f6e4; word-break: break-all; }
+        .delete-sch-btn { background: #f1f5f9; color: #64748b; padding: 4px 8px; font-size: 11px; margin-top: 8px; width: 100%; }
+        .delete-sch-btn:hover { background: #e2e8f0; }
+        
+        /* 개인 연수 전용 스타일 (핑크색 테마) */
+        .personal-card { border-left-color: #ec4899; background-color: #fdf2f8; }
+        .personal-card .sch-time { color: #be185d; background: #fce7f3; }
+        .personal-card .sch-stage { color: #be185d; }
+        .sch-type-badge { background: #ec4899; color: white; display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-bottom: 5px; }
+
+        /* 체크박스 컨테이너 */
+        .member-box-wrap { padding: 12px; background: white; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 15px; }
+        .member-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+        
+        select:disabled { background: #e2e8f0; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>🎭 하예라 정기공연 연수 일정</h2>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('setup')">1. 무대 및 인원 세팅</button>
+            <button class="tab-btn" onclick="switchTab('schedule')">2. 전체 주간 일정 관리</button>
+            <button class="tab-btn" onclick="switchTab('personal')">3. 개인별 일정 보기</button>
+        </div>
+    </div>
+
+    <!-- 1. 무대 세팅 화면 -->
+    <div id="setup-view" class="container active">
+        <h3>무대 목록 등록</h3>
+        <div class="setup-form">
+            <input type="text" id="stageNameInput" placeholder="무대 이름 (예: 오프닝 댄스)">
+            <input type="text" id="repInput" placeholder="대표자 이름 (예: 김철수)">
+            <input type="text" id="membersInput" placeholder="참가자 전체 (쉼표로 구분)">
+            <button onclick="addStage()">무대 추가</button>
+        </div>
+        <div class="stage-list" id="stageList"></div>
+    </div>
+
+    <!-- 2. 전체 주간 일정 화면 -->
+    <div id="schedule-view" class="container">
+        <div class="schedule-controls">
+            <h3>새 연습 일정 등록</h3>
+            
+            <!-- 개인 연수 토글 -->
+            <div class="form-row" style="margin-bottom: 20px;">
+                <label class="checkbox-label" style="color: #ec4899; font-weight: bold; background: #fdf2f8; padding: 10px 15px; border-radius: 6px; border: 1px solid #fbcfe8; width: 100%;">
+                    <input type="checkbox" id="isPersonalCheck" onchange="updateMembersCheckbox()"> 🌟 개인 연수
+                </label>
+            </div>
+
+            <div class="form-row">
+                <select id="schDay">
+                    <option value="0">월요일</option><option value="1">화요일</option>
+                    <option value="2">수요일</option><option value="3">목요일</option>
+                    <option value="4">금요일</option><option value="5">토요일</option>
+                    <option value="6">일요일</option>
+                </select>
+                
+                <select id="schStartTime"></select> <span class="time-separator">~</span> <select id="schEndTime"></select>
+                <select id="schStage" onchange="updateMembersCheckbox()">
+                    <option value="">무대 선택 (먼저 세팅 탭에서 등록하세요)</option>
+                </select>
+            </div>
+
+            <!-- 비고란 -->
+            <div class="form-row">
+                <input type="text" id="schRemark" placeholder="비고" style="width: 100%;">
+            </div>
+
+            <!-- 인원 선택 박스 -->
+            <div class="member-box-wrap">
+                <div class="member-header">
+                    <small style="color:#666;">참가 인원을 선택하세요. (불참자는 체크 해제)</small>
+                    <label class="checkbox-label" style="font-weight:bold; color:#4F46E5;">
+                        <input type="checkbox" id="selectAllBtn" onchange="toggleAll()" checked> 전체 선택 / 해제
+                    </label>
+                </div>
+                
+                <div id="memberCheckboxesList" style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 20px;">
+                    무대를 선택하면 인원이 표시됩니다.
+                </div>
+            </div>
+
+            <button onclick="addSchedule()" style="width: 100%; padding: 14px; font-size: 16px;">일정 등록하기</button>
+        </div>
+
+        <div class="week-grid" id="fullWeekGrid"></div>
+    </div>
+
+    <!-- 3. 개인별 일정 화면 -->
+    <div id="personal-view" class="container">
+        <div class="schedule-controls" style="text-align: center;">
+            <h3>내 일정 모아보기</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 10px;">이름을 선택하면 해당 인원이 포함된 일정만 주간 달력에 표시됩니다.</p>
+            <select id="personalNameSelect" onchange="renderPersonalSchedules()" style="min-width: 250px; font-size: 16px; text-align: center;">
+                <option value="">이름을 선택하세요</option>
+            </select>
+        </div>
+        
+        <div class="week-grid" id="personalWeekGrid"></div>
+    </div>
+
+    <script>
+        let stages = JSON.parse(localStorage.getItem('hayeraStages')) || [];
+        let schedules = JSON.parse(localStorage.getItem('hayeraSchedules')) || [];
+        let dayDates = JSON.parse(localStorage.getItem('hayeraDayDates')) || ['', '', '', '', '', '', ''];
+
+        // 1시간 단위 시간 옵션 생성 (05:00 ~ 24:00)
+        function generateTimeOptions() {
+            let options = '<option value="">시간 선택</option>';
+            for(let h = 5; h <= 24; h++) {
+                let hour = h.toString().padStart(2, '0');
+                options += `<option value="${hour}:00">${hour}:00</option>`;
+            }
+            return options;
+        }
+
+        window.onload = () => {
+            const timeOpts = generateTimeOptions();
+            document.getElementById('schStartTime').innerHTML = timeOpts;
+            document.getElementById('schEndTime').innerHTML = timeOpts;
+            
+            initGrid('fullWeekGrid', true);
+            initGrid('personalWeekGrid', false);
+            
+            renderStages();
+            renderWeekSchedules();
+            renderPersonalSchedules();
+        };
+
+        // isEditMode가 true면 입력칸 표시, false면 텍스트로만 표시
+        function initGrid(gridId, isEditMode) {
+            const grid = document.getElementById(gridId);
+            const days = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+            grid.innerHTML = '';
+            
+            days.forEach((day, index) => {
+                let dateElement = isEditMode 
+                    ? `<input type="text" class="day-date-input" placeholder="날짜 (예: 10/5)" value="${dayDates[index]}" onchange="updateDayDate(${index}, this.value)">`
+                    : `<div class="day-date-display">${dayDates[index] || '날짜 미지정'}</div>`;
+                    
+                // 요일별 바닥 선 구분을 위한 래퍼 추가
+                let titleWrapClass = isEditMode ? 'border-bottom: 2px solid #e2e8f0;' : '';
+
+                grid.innerHTML += `
+                    <div class="day-column" id="${gridId}-day-${index}">
+                        <div style="${titleWrapClass}">
+                            <div class="day-title">${day}</div>
+                            ${dateElement}
+                        </div>
+                        <div class="sch-list"></div>
+                    </div>
+                `;
+            });
+        }
+
+        // 날짜가 수정될 때마다 저장
+        function updateDayDate(index, value) {
+            dayDates[index] = value;
+            localStorage.setItem('hayeraDayDates', JSON.stringify(dayDates));
+            
+            // 3번 탭(개인별 뷰)의 날짜 표시도 같이 업데이트
+            initGrid('personalWeekGrid', false);
+            renderPersonalSchedules(); 
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId + '-view').classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabId === 'schedule') {
+                updateStageDropdown();
+                renderWeekSchedules();
+            } else if (tabId === 'personal') {
+                updatePersonalDropdown();
+                renderPersonalSchedules();
+            }
+        }
+
+        // --- 1. 무대 세팅 ---
+        function addStage() {
+            const name = document.getElementById('stageNameInput').value.trim();
+            const rep = document.getElementById('repInput').value.trim();
+            const membersStr = document.getElementById('membersInput').value.trim();
+
+            if (!name || !rep || !membersStr) {
+                alert('무대 이름, 대표자, 참가자 이름을 모두 입력해주세요.'); return;
+            }
+
+            const members = membersStr.split(',').map(m => m.trim()).filter(m => m);
+            if(!members.includes(rep)) members.unshift(rep);
+
+            stages.push({ id: Date.now(), name, rep, members });
+            localStorage.setItem('hayeraStages', JSON.stringify(stages));
+            
+            document.getElementById('stageNameInput').value = '';
+            document.getElementById('repInput').value = '';
+            document.getElementById('membersInput').value = '';
+            renderStages();
+            if(document.getElementById('schedule-view').classList.contains('active')) updateStageDropdown();
+        }
+
+        function deleteStage(id) {
+            if(confirm('무대와 관련된 일정이 모두 삭제됩니다. 계속하시겠습니까?')) {
+                stages = stages.filter(s => s.id !== id);
+                schedules = schedules.filter(sch => sch.stageId !== id);
+                localStorage.setItem('hayeraStages', JSON.stringify(stages));
+                localStorage.setItem('hayeraSchedules', JSON.stringify(schedules));
+                renderStages();
+                updateStageDropdown();
+            }
+        }
+
+        function renderStages() {
+            const list = document.getElementById('stageList');
+            list.innerHTML = '';
+            stages.forEach(stage => {
+                list.innerHTML += `
+                    <div class="stage-card">
+                        <div class="rep-badge">👑 대표: ${stage.rep || '미지정'}</div>
+                        <h4>${stage.name}</h4>
+                        <p><b>인원 (${stage.members.length}명):</b> ${stage.members.join(', ')}</p>
+                        <button class="danger-btn" onclick="deleteStage(${stage.id})">삭제</button>
+                    </div>
+                `;
+            });
+        }
+
+        // --- 2. 전체 일정 관리 ---
+        function updateStageDropdown() {
+            const select = document.getElementById('schStage');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">무대 선택</option>';
+            stages.forEach(stage => {
+                select.innerHTML += `<option value="${stage.id}">${stage.name}</option>`;
+            });
+            if(currentValue) select.value = currentValue;
+            updateMembersCheckbox();
+        }
+
+        function toggleAll() {
+            const isChecked = document.getElementById('selectAllBtn').checked;
+            const cbs = document.querySelectorAll('#memberCheckboxesList input[type="checkbox"]');
+            cbs.forEach(cb => cb.checked = isChecked);
+        }
+
+        function updateMembersCheckbox() {
+            const stageSelect = document.getElementById('schStage');
+            const isPersonal = document.getElementById('isPersonalCheck').checked;
+            const container = document.getElementById('memberCheckboxesList');
+            document.getElementById('selectAllBtn').checked = true;
+            
+            if (isPersonal) {
+                stageSelect.disabled = true;
+                stageSelect.value = '';
+                
+                let allNames = new Set();
+                stages.forEach(stage => stage.members.forEach(m => allNames.add(m)));
+                let targetMembers = [...allNames].sort();
+                
+                container.innerHTML = '';
+                if(targetMembers.length === 0) {
+                    container.innerHTML = '등록된 인원이 없습니다. 세팅 탭에서 먼저 추가해주세요.';
+                } else {
+                    targetMembers.forEach(member => {
+                        container.innerHTML += `
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="${member}" checked> ${member}
+                            </label>
+                        `;
+                    });
+                }
+            } else {
+                stageSelect.disabled = false;
+                const stageId = stageSelect.value;
+                
+                if (!stageId) {
+                    container.innerHTML = '무대를 선택하면 인원이 표시됩니다.';
+                    return;
+                }
+
+                const stage = stages.find(s => s.id == stageId);
+                container.innerHTML = '';
+                if(stage) {
+                    stage.members.forEach(member => {
+                        container.innerHTML += `
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="${member}" checked> ${member}
+                            </label>
+                        `;
+                    });
+                }
+            }
+        }
+
+        function addSchedule() {
+            const day = document.getElementById('schDay').value;
+            const startTime = document.getElementById('schStartTime').value;
+            const endTime = document.getElementById('schEndTime').value;
+            const isPersonal = document.getElementById('isPersonalCheck').checked;
+            const stageId = document.getElementById('schStage').value;
+            const remark = document.getElementById('schRemark').value.trim();
+            
+            if (!startTime || !endTime) { alert('시작/종료 시간을 모두 선택해주세요.'); return; }
+            if (startTime >= endTime) { alert('종료 시간이 시작 시간과 같거나 빠를 수 없습니다.'); return; }
+            if (!isPersonal && !stageId) { alert('무대를 선택해주세요.'); return; }
+
+            let saveStageId = 'personal';
+            let saveStageName = '🌟 개인 연수';
+            let saveRep = '';
+
+            if (!isPersonal) {
+                const stage = stages.find(s => s.id == stageId);
+                saveStageId = stage.id;
+                saveStageName = stage.name;
+                saveRep = stage.rep;
+            }
+
+            const checkboxes = document.querySelectorAll('#memberCheckboxesList input[type="checkbox"]');
+            let participants = [];
+            let absentees = [];
+
+            checkboxes.forEach(cb => {
+                if (cb.checked) participants.push(cb.value);
+                else absentees.push(cb.value);
+            });
+
+            schedules.push({
+                id: Date.now(),
+                type: isPersonal ? 'personal' : 'regular',
+                day: parseInt(day),
+                startTime: startTime,
+                endTime: endTime,
+                stageId: saveStageId,
+                stageName: saveStageName,
+                rep: saveRep,
+                participants: [...new Set(participants)],
+                absentees: isPersonal ? [] : absentees,
+                remark: remark
+            });
+
+            localStorage.setItem('hayeraSchedules', JSON.stringify(schedules));
+            
+            document.getElementById('schStartTime').value = '';
+            document.getElementById('schEndTime').value = '';
+            document.getElementById('schRemark').value = '';
+            
+            updateMembersCheckbox(); 
+            renderWeekSchedules();
+        }
+
+        function deleteSchedule(id) {
+            if(confirm('이 일정을 삭제하시겠습니까?')) {
+                schedules = schedules.filter(sch => sch.id !== id);
+                localStorage.setItem('hayeraSchedules', JSON.stringify(schedules));
+                renderWeekSchedules();
+                renderPersonalSchedules(); 
+            }
+        }
+
+        function createCardHtml(sch) {
+            const isPersonal = sch.type === 'personal';
+            const cardClass = isPersonal ? 'schedule-card personal-card' : 'schedule-card';
+            
+            const typeBadge = isPersonal ? `<div class="sch-type-badge">개인 연수</div>` : '';
+            const repHtml = (!isPersonal && sch.rep) ? `<div class="sch-rep">👑 대표: ${sch.rep}</div>` : '';
+            
+            const absentHtml = (!isPersonal && sch.absentees && sch.absentees.length > 0) ? `<div class="sch-absent">❌ 제외: ${sch.absentees.join(', ')}</div>` : '';
+            const remarkHtml = sch.remark ? `<div class="sch-remark">📝 비고: ${sch.remark}</div>` : '';
+            
+            return `
+                <div class="${cardClass}">
+                    ${typeBadge}
+                    <div class="sch-time">⏰ ${sch.startTime} ~ ${sch.endTime}</div>
+                    <div class="sch-stage">${sch.stageName}</div>
+                    ${repHtml}
+                    <div class="sch-members">✅ 참가: ${sch.participants.length > 0 ? sch.participants.join(', ') : '없음'}</div>
+                    ${absentHtml}
+                    ${remarkHtml}
+                    <button class="delete-sch-btn" onclick="deleteSchedule(${sch.id})">일정 삭제</button>
+                </div>
+            `;
+        }
+
+        function renderWeekSchedules() {
+            for (let i = 0; i < 7; i++) {
+                document.querySelector(`#fullWeekGrid-day-${i} .sch-list`).innerHTML = '';
+            }
+            
+            const sortedSchedules = [...schedules].sort((a, b) => a.startTime.localeCompare(b.startTime));
+            
+            sortedSchedules.forEach(sch => {
+                const list = document.querySelector(`#fullWeekGrid-day-${sch.day} .sch-list`);
+                list.innerHTML += createCardHtml(sch);
+            });
+        }
+
+        // --- 3. 개인별 일정 보기 ---
+        function updatePersonalDropdown() {
+            const select = document.getElementById('personalNameSelect');
+            let allNames = new Set();
+            
+            stages.forEach(stage => stage.members.forEach(m => allNames.add(m)));
+            schedules.forEach(sch => sch.participants.forEach(p => allNames.add(p)));
+            
+            const currentSelected = select.value;
+            select.innerHTML = '<option value="">이름을 선택하세요</option>';
+            
+            [...allNames].sort().forEach(name => {
+                select.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+            if(currentSelected && allNames.has(currentSelected)) {
+                select.value = currentSelected;
+            }
+        }
+
+        function renderPersonalSchedules() {
+            const selectedName = document.getElementById('personalNameSelect').value;
+            for (let i = 0; i < 7; i++) {
+                document.querySelector(`#personalWeekGrid-day-${i} .sch-list`).innerHTML = '';
+            }
+            if (!selectedName) return; 
+
+            const sortedSchedules = [...schedules].sort((a, b) => a.startTime.localeCompare(b.startTime));
+            
+            sortedSchedules.forEach(sch => {
+                if (sch.participants.includes(selectedName)) {
+                    const list = document.querySelector(`#personalWeekGrid-day-${sch.day} .sch-list`);
+                    list.innerHTML += createCardHtml(sch);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
